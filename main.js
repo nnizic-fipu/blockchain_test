@@ -1,95 +1,113 @@
 // import crypto-js library-a, treba za stvaranje hash-a
-const SHA256 = require('crypto-js/sha256')
+const SHA256 = require('crypto-js/sha256');
 // kreiranje block-a od kojih će se sastojati blockchain
 // klasa Block
 class Block {
   // definira što BLock treba imati: redni broj, vrijeme kad
   // je napravljen, vrijednosti i poveznicu sa blockom ispred sebe
-  constructor (index, timestamp, data, previousHash = '') {
-    this.index = index
-    this.timestamp = timestamp
-    this.data = data
-    this.previousHash = previousHash
+  constructor(index, timestamp, data, previousHash = '') {
+    this.index = index;
+    this.timestamp = timestamp;
+    this.data = data;
+    this.previousHash = previousHash;
     // hash - sadrži izračun hash-a za ovaj Block
-    this.hash = this.calculateHash()
+    this.hash = this.calculateHash();
+    this.nonce = 0;
   }
 
   // metoda za izračun hash-a za objekt
-  calculateHash () {
+  calculateHash() {
     // vratit će stringifizar u json data  objekt, pretvoren u string
     return SHA256(
-      this.index +
-        this.previousHash +
-        this.timestamp +
-        JSON.stringify(this.data)
-    ).toString()
+      this.index
+        + this.previousHash
+        + this.timestamp
+        + JSON.stringify(this.data)
+        + this.nonce,
+    ).toString();
+  }
+
+  // izračun hasha sa određenim brojem nula na početku
+  mineBlock(difficulty) {
+    while (
+      this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')
+    ) {
+      this.nonce++;
+      this.hash = this.calculateHash();
+    }
+    console.log(`Block mined: ${this.hash}`);
   }
 }
 
 // klasa Blockchain - spajanje blockova u lanac
 class Blockchain {
-  constructor () {
+  constructor() {
     // definiramo kao niz blockova
     // genesis bock - prvi block, stvara se odmoh
-    this.chain = [this.createGenesisBlock()]
+    this.chain = [this.createGenesisBlock()];
+    this.difficulty = 4;
   }
 
   // prvi block kreiramo ručno, različit je od ostalih jer se ne vezuje za block ispred
   // nema "previousHash"
-  createGenesisBlock () {
-    return new Block(0, '25/03/2024', 'Genesis block', '0')
+  createGenesisBlock() {
+    return new Block(0, '25/03/2024', 'Genesis block', '0');
   }
 
   // metoda za dohvaćanje zadnjeg blocka
   // potrebno za izračun previousHash
-  getLatestBlock () {
-    return this.chain[this.chain.length - 1]
+  getLatestBlock() {
+    return this.chain[this.chain.length - 1];
   }
 
   // metoda za dodavanje blockova
   // doda previousHash, izračuna hash novog blocka
   // doda novi block u lanac
-  addBlock (newBlock) {
-    newBlock.previousHash = this.getLatestBlock().hash
-    newBlock.hash = newBlock.calculateHash()
-    this.chain.push(newBlock)
+  addBlock(newBlock) {
+    newBlock.previousHash = this.getLatestBlock().hash;
+    //    newBlock.hash = newBlock.calculateHash();
+    // stvara novi block određenom brzinom - traži četiri nule na početku hash-a
+    newBlock.mineBlock(this.difficulty);
+    this.chain.push(newBlock);
   }
 
   // metoda za provjeru ispravnosti blockchaina - vraća true (ispravan) i false (neispravan)
-  isChainValid () {
+  isChainValid() {
     // petlja za sve blockove osim prvog (genesis block-a)
     // uspoređuje block sa prethodnim blockom
     for (let i = 1; i < this.chain.length; i++) {
-      const currentBlock = this.chain[i]
-      const previousBlock = this.chain[i - 1]
+      const currentBlock = this.chain[i];
+      const previousBlock = this.chain[i - 1];
 
       // provjera jel izračun hasha blocka jednak njegovu svojstvu hash
       if (currentBlock.hash !== currentBlock.calculateHash()) {
-        return false
+        return false;
       }
       // provjera odgovara li svojstvo previousHash nekog blocka hash-u blocka ispred
       if (currentBlock.previousHash !== previousBlock.hash) {
-        return false
+        return false;
       }
     }
     // ako su prošla oba testa, chain je ispravan
-    return true
+    return true;
   }
 }
 // dodvaanje novog Blockchaina i nekoliko blockova
-const FIPUcoin = new Blockchain()
-FIPUcoin.addBlock(new Block(1, '26/03/2024', { amount: 4 }))
-FIPUcoin.addBlock(new Block(2, '27/03/2024', { amount: 10 }))
+const FIPUcoin = new Blockchain();
+console.log('Mining block...');
+FIPUcoin.addBlock(new Block(1, '26/03/2024', { amount: 4 }));
+console.log('Mining block...');
+FIPUcoin.addBlock(new Block(2, '27/03/2024', { amount: 10 }));
 
 // stringifizirani ispis
-console.log(JSON.stringify(FIPUcoin, null, 4))
+console.log(JSON.stringify(FIPUcoin, null, 4));
 // provjera pozivom na metodu provjere ispravnosti
-console.log('Is blockchain valid? ' + FIPUcoin.isChainValid())
+console.log(`Is blockchain valid? ${FIPUcoin.isChainValid()}`);
 
 // testovi pokušaja izmjene podataka u chainu
 // naknadno mjenjanje vrijednosti svojstva data
-FIPUcoin.chain[1].data = { amount: 100 }
+FIPUcoin.chain[1].data = { amount: 100 };
 // naknadni izračun hasha nakon promjene vriejdnosti
-FIPUcoin.chain[1].hash = FIPUcoin.chain[1].calculateHash()
+FIPUcoin.chain[1].hash = FIPUcoin.chain[1].calculateHash();
 
-console.log('Is blockchain valid? ' + FIPUcoin.isChainValid())
+console.log(`Is blockchain valid? ${FIPUcoin.isChainValid()}`);

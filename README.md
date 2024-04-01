@@ -7,5 +7,8 @@
 </p>
 <hr/>
 <p>
-  Sljedeći korak - dodati proof of work
+<p>
+  Dodan proof of work - težina izrade blocka - 4 nule na početku
+</p>
+  Sljedeći korak - mining rewards i transactions
 </p>
